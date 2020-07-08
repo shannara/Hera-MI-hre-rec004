@@ -8,12 +8,20 @@ if [ ! -d $OUTPUT_DIR ]; then
   mkdir $OUTPUT_DIR
 fi
 
+# Field we want datas
+fields=(StudyInstanceUID SeriesInstanceUID SOPInstanceUID)
+
 # dump dcm file
 cd $DATAS_DIR
 for file in $(ls *.dcm)
 do
   output_file=${file%.*}
+  # Clean old file
+  rm -rf $OUTPUT_DIR/$output_file.dump
   echo -n "Dump $file in $output_file.dump...  "
-  dcmdump $file > $OUTPUT_DIR/$output_file.dump
+  for field in ${fields[@]}
+  do
+    dcmdump $file | grep " $field" >> $OUTPUT_DIR/$output_file.dump
+  done
   echo "done"
 done
