@@ -1,0 +1,35 @@
+version: "3.3"
+services:
+
+  # svc-node fetch and serve datas
+  svc-node:
+    container_name: svc-node
+    build: ./svc-node
+    restart: always
+    networks:
+      svc-network:
+        ipv4_address: 172.19.0.2
+
+  # worker fetch datas from svc-node
+  worker:
+    container_name: worker
+    build: ./worker
+    volumes:
+      - ./datas:/home/workuser/datas:rw
+    networks:
+      svc-network:
+        ipv4_address: 172.19.0.3
+      hre-network:
+        ipv4_address: 172.20.0.2
+
+networks:
+  svc-network:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.19.0.0/16
+  hre-network:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.20.0.0/16
