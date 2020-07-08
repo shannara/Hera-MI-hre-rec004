@@ -1,6 +1,7 @@
 # Build
 FROM ubuntu:latest AS builder
 ARG DEBIAN_FRONTEND=noninteractive
+WORKDIR /root
 
 # Ensure image is up to date
 RUN apt update && apt -y dist-upgrade
@@ -34,6 +35,10 @@ RUN useradd -m -s /bin/bash workuser
 # Add script for fetch datas through scp from svc-node
 COPY fetch_datas.sh /home/workuser/fetch_datas.sh
 RUN chmod +x /home/workuser/fetch_datas.sh
+
+# Add script to extract datas with dcmdump
+COPY extract_datas.sh /home/workuser/extract_datas.sh
+RUN chmod +x /home/workuser/extract_datas.sh
 
 # Add private key for fetch datas from svc-node
 RUN mkdir /home/workuser/.ssh
