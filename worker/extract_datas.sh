@@ -21,7 +21,8 @@ do
   echo -n "Dump $file in $output_file.dump...  "
   for field in ${fields[@]}
   do
-    dcmdump $file | grep " $field" >> $OUTPUT_DIR/$output_file.dump
+    # Extract only value and field name
+    dcmdump $file | grep " $field" | awk -F' ' '{print $7,$3}' >> $OUTPUT_DIR/$output_file.dump
   done
   echo "done"
 done
