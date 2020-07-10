@@ -32,13 +32,11 @@ RUN apt update && apt -y dist-upgrade
 # Create standard user
 RUN useradd -m -s /bin/bash workuser
 
-# Add script for fetch datas through scp from svc-node
-COPY fetch_datas.sh /home/workuser/fetch_datas.sh
-RUN chmod +x /home/workuser/fetch_datas.sh
+# Add scripts
+COPY scripts /home/workuser/
 
-# Add script to extract datas with dcmdump
-COPY extract_datas.sh /home/workuser/extract_datas.sh
-RUN chmod +x /home/workuser/extract_datas.sh
+# Set executable
+RUN chmod +x /home/workuser/*_datas.sh
 
 # Add private key for fetch datas from svc-node
 RUN mkdir /home/workuser/.ssh
@@ -46,10 +44,10 @@ COPY ./hre.priv /home/workuser/.ssh/id_rsa
 RUN chmod 700 /home/workuser/.ssh && chmod 600 /home/workuser/.ssh/id_rsa
 RUN chown -R workuser. /home/workuser
 
-# Install ssh client and DCMTK runtime deps.
+# Install ssh client, python3 and pymongo and DCMTK runtime deps.
 # Finish by clean cache
-RUN apt -y install openssh-client libicu66 && apt clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt -y install openssh-client python3 python3-pymongo libicu66 \
+    && apt clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/workuser
 USER workuser

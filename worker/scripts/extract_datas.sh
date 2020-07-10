@@ -15,14 +15,12 @@ fields=(StudyInstanceUID SeriesInstanceUID SOPInstanceUID)
 cd $DATAS_DIR
 for file in $(ls *.dcm)
 do
-  output_file=${file%.*}
-  # Clean old file
-  rm -rf $OUTPUT_DIR/$output_file.dump
-  echo -n "Dump $file in $output_file.dump...  "
+  document=()
   for field in ${fields[@]}
   do
-    # Extract only value and field name
-    dcmdump $file | grep " $field" | awk -F' ' '{print $7,$3}' >> $OUTPUT_DIR/$output_file.dump
+    # Extract only value
+    document[${#document[@]}]=$(dcmdump $file | grep " $field" | awk -F' ' '{print $3}' |  tail -c +2 | head -c -2)
   done
-  echo "done"
+  # Store datas on collection
+  python3 /home/workuser/dcmdumptodb.py $file ${document[@]}
 done
