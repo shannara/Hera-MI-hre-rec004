@@ -5,46 +5,83 @@ services:
   svc-node:
     container_name: svc-node
     build: ./svc-node
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
     restart: always
     networks:
-      svc-network:
-        ipv4_address: 172.19.0.2
+      - vpn
+    depends_on:
+      - openvpn
+#      svc-network:
+#        ipv4_address: 172.19.0.2
 
   # worker fetch datas from svc-node
   worker:
     container_name: worker
     build: ./worker
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
     environment:
       MONGO_USER: root
       MONGO_PASSWORD: rockmyroot
     volumes:
-      - ./datas:/home/workuser/datas:rw
+      - ./datas:/root/datas:rw
     networks:
-      svc-network:
-        ipv4_address: 172.19.0.3
-      hre-network:
-        ipv4_address: 172.20.0.2
+      - vpn
+    depends_on:
+      - svc-node
+      - db
+#      svc-network:
+#        ipv4_address: 172.19.0.3
+#      hre-network:
+#        ipv4_address: 172.20.0.2
 
   # db store collection of dump datas
   db:
     container_name: db
-    image: mongo
+    build: ./db
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rockmyroot
     networks:
-      hre-network:
-        ipv4_address: 172.20.0.3
+      - vpn
+    depends_on:
+      - openvpn
+#      hre-network:
+#        ipv4_address: 172.20.0.3
+
+  openvpn:
+    cap_add:
+     - NET_ADMIN
+    container_name: openvpn
+    image: kylemanna/openvpn
+    restart: always
+    environment:
+      OVPN_DNS: 0
+    volumes:
+     - ./openvpn-data:/etc/openvpn
+    networks:
+      - vpn
 
 networks:
-  svc-network:
-    driver: bridge
-    ipam:
-     config:
-       - subnet: 172.19.0.0/16
-  hre-network:
-    driver: bridge
-    ipam:
-     config:
-       - subnet: 172.20.0.0/16
+  vpn:
+    external: true
+#  svc-network:
+#    driver: bridge
+#    ipam:
+#     config:
+#       - subnet: 172.19.0.0/16
+#  hre-network:
+#    driver: bridge
+#    ipam:
+#     config:
+#       - subnet: 172.20.0.0/16
