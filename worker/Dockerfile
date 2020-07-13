@@ -23,33 +23,31 @@ RUN mkdir dcmtk-build && cd dcmtk-build && \
 # Runtime
 FROM ubuntu:latest
 ARG DEBIAN_FRONTEND=noninteractive
-
+WORKDIR /root
 COPY --from=builder /root/dcmtk-build/install/ /
 
 # Ensure image is up to date
 RUN apt update && apt -y dist-upgrade
 
-# Create standard user
-RUN useradd -m -s /bin/bash workuser
-
 # Add scripts
-COPY scripts /home/workuser/
+COPY scripts /root
 
 # Set executable
-RUN chmod +x /home/workuser/*_datas.sh
+RUN chmod +x /root/*_datas.sh
 
 # Add private key for fetch datas from svc-node
-RUN mkdir /home/workuser/.ssh
-COPY ./hre.priv /home/workuser/.ssh/id_rsa
-RUN chmod 700 /home/workuser/.ssh && chmod 600 /home/workuser/.ssh/id_rsa
-RUN chown -R workuser. /home/workuser
+RUN mkdir /root/.ssh
+COPY ./hre.priv /root/.ssh/id_rsa
+RUN chmod 700 /root/.ssh && chmod 600 /root/.ssh/id_rsa
+#RUN chown -R workuser. /root
 
-# Install ssh client, python3 and pymongo and DCMTK runtime deps.
-# Finish by clean cache
-RUN apt -y install openssh-client python3 python3-pymongo libicu66 \
-    && apt clean && rm -rf /var/lib/apt/lists/*
+# Install ssh client, python3 and pymongo and DCMTK runtime deps, supervisord
+# and OpenVPN client. Finish by clean cache
+RUN apt -y install openssh-client python3 python3-pymongo libicu66 supervisor \
+    openvpn && apt clean && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /home/workuser
-USER workuser
+# Add worker.ovpn, supvervisor config
+COPY worker.ovpn /root
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-CMD ["/bin/bash"]
+CMD ["/usr/bin/supervisord"]
