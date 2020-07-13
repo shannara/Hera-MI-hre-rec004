@@ -1,0 +1,9 @@
+# Ignore OpenVPN private files
+openvpn-data/*
+!openvpn-data/ovpn_env.sh.dist
+!openvpn-data/ccd
+*.ovpn
+
+# Ignore dcm and dump files
+datas/*
+!datas/.gitkeep
