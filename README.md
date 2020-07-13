@@ -147,3 +147,90 @@ docker exec -it db bash
 # { "_id" : "planmed-200064.424.dcm", "StudyInstanceUID" : "2.16.840.1.113669.632.20.20140513.192554394.19.415",
 # "SeriesInstanceUID" : "2.16.840.1.113669.632.20.20140513.202407240.8494.427", "SOPInstanceUID" : "2.16.840.1.113669.632.20.20140513.202406491.200064.424" }
 ```
+
+step4
+-----
+
+```shell
+git checkout step4
+# if you are not in docker group prefix docker-compose command with sudo
+# To ensure security traffic between container, you need setup VPN server,
+# in case OpenVPN.
+# In first step, you need create external network "vpn", this network will be
+# used for vpn traffic between container.
+docker network create vpn
+# You need show subnet assigned to vpn network
+docker network inspect vpn |grep Subnet
+# example output
+# "Subnet": "172.25.0.0/16",
+# You see that subnet is 172.25.0.0/16, openvpn was first container running, gateway is 172.25.0.1,
+# then 172.25.0.2 will be IP address assigned for OpenVPN container.
+# Copy dist file as ovpn_env.sh and set OpenVPN IP address
+cp openvpn-data/ovpn_env.sh.dist openvpn-data/ovpn_env.sh
+sed -i 's/DOCKER_VPN_IPADDR/172.25.0.2/g' openvpn-data/ovpn_env.sh
+# Run this command to generate openvpn config
+docker-compose run --rm openvpn ovpn_genconfig -u udp://172.25.0.2
+# Now you need create CA key, use this command to do this
+docker-compose run --rm openvpn ovpn_initpki
+# When prompt ask CA Key Passphrase, enter passphrase and type Enter,
+# (for security nothing is display), and again to confirm.
+# You need this passphrase later, don't forget them
+# example output
+# Enter New CA Key Passphrase:
+# Re-Enter New CA Key Passphrase:
+# After key is generate, you need set Common Name for CA, by default if you type
+# enter is 'Easy-RSA CA', you can type openvpn (name of container) follow by enter
+# Common Name (eg: your user, host, or server name) [Easy-RSA CA]:
+Common Name (eg: your user, host, or server name) [Easy-RSA CA]: openvpn
+# Script generate CA Key and CA certificate, at last, he ask to enter passphrase
+# of the CA Key to create and sign CA certificate (enter passphrase follow by Enter)
+Enter pass phrase for /etc/openvpn/pki/private/ca.key:
+# Check that the request matches the signature
+# Signature ok
+# The Subject's Distinguished Name is as follows
+# ..
+Enter pass phrase for /etc/openvpn/pki/private/ca.key:
+# An updated CRL has been created.
+# Now you have OpenVPN config ready, it's time to setup openvpn config for each clients
+# svc-node, worker, db, during generate, script ask passphrase for CA Key, again nothing
+# is display when you enter pass phrase (follow by Enter)
+for client in "svc-node" "worker" "db"
+do
+  docker-compose run --rm openvpn easyrsa build-client-full $client nopass
+done
+# Now you need to save each openvpn client config file for build container with them
+for client in "svc-node" "worker" "db"
+do
+  docker-compose run --rm openvpn ovpn_getclient $client > $client/$client.ovpn
+done
+# You can run openvpn container in background
+docker-compose up -d openvpn
+# Now you need rebuild all containers to use openvpn config
+docker-compose build db svc-node worker
+# Run svc-node and db containers
+docker-compose up -d db svc-node
+# Run worker container
+docker-compose up -d worker
+# You can run fetch_datas and extract_datas script inside worker
+docker exec -it worker bash
+# you enter in worker container and prompt
+# example: root@08f73fb333b1:~#
+# To fetch datas, same as step3 use ./fetch_datas.sh
+# example :
+#root@08f73fb333b1:~# ./fetch_datas.sh
+# You see this output, note 192.168.255.10 is VPN IP address of svc-node
+#Warning: Permanently added '192.168.255.10' (ECDSA) to the list of known hosts.
+#fuji-50333032.466243176.dcm       100%   53MB  25.3MB/s   00:02
+#ge-0001-0000-00000000.dcm         100%   14MB  26.6MB/s   00:00
+#hologic-MG02.dcm                  100%   26MB  25.3MB/s   00:01
+#planmed-200064.424.dcm            100%   19MB  25.0MB/s   00:00
+# To extract datas dump and put them on mongo database, use ./extract_datas.sh
+#root@08f73fb333b1:~# ./extract_datas.sh
+#Import fuji-50333032.466243176.dcm
+#Success
+#Import ge-0001-0000-00000000.dcm
+#Success
+#Import hologic-MG02.dcm
+#Success
+#Import planmed-200064.424.dcm
+#Success
