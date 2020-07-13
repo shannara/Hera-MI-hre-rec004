@@ -3,8 +3,11 @@ FROM centos:latest
 # Ensure image is up-to-date
 RUN dnf -y update
 
-# Install stuff to serve files through SCP
-RUN dnf -y install openssh-server git-core && dnf clean all
+# Enable epel-release for supervisor and OpenVPN
+RUN dnf -y install epel-release
+
+# Install stuff to serve files through SCP, supervisor and OpenVPN client
+RUN dnf -y install openssh-server git-core supervisor openvpn && dnf clean all
 
 # Gen dummy keys, centos doesn't autogen them like ubuntu does
 RUN /usr/bin/ssh-keygen -A
@@ -28,8 +31,13 @@ RUN git clone https://github.com/hera-mi/test_material ~/test_material
 # Go back to root
 USER root
 
-# Expose SSH port and run SSHD
+# Expose SSH port
 # Remove /run/nologin (systemd not happy inside container)
 EXPOSE 22
 RUN rm -rf /run/nologin
-CMD ["/usr/sbin/sshd", "-D"]
+
+# Add svc-node.ovpn, supvervisor config
+COPY svc-node.ovpn /root
+COPY supervisord.conf /etc/supervisord.conf
+
+CMD ["/usr/bin/supervisord"]
