@@ -1,7 +1,14 @@
 FROM ubuntu:latest
+ARG DEBIAN_FRONTEND=noninteractive
 
-# Install supervisord and OpenVPN client
-RUN apt update && apt -y install mongodb supervisor openvpn
+# Install supervisord and OpenVPN client, and stuff for mongo https repository
+RUN apt update && apt -y install wget gnupg apt-transport-https supervisor openvpn
+
+# Install MongoDB 4.2
+RUN wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | apt-key add -
+RUN echo "deb https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" \
+    > /etc/apt/sources.list.d/mongodb-org-4.2.list && apt update -y \
+    && apt -y install mongodb-org
 
 # Add db.ovpn, supvervisor config
 COPY db.ovpn /root
