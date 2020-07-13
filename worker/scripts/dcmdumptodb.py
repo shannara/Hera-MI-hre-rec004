@@ -7,7 +7,7 @@ password = os.environ['MONGO_PASSWORD']
 
 def main(argv):
     # Init database connexion
-    cnx = MongoClient('172.20.0.3',username=username,password=password)
+    cnx = MongoClient('192.168.255.21',username=username,password=password)
 
     # Create HRE database and dcmdump collection
     db = cnx["HRE"]
