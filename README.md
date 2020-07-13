@@ -98,6 +98,7 @@ docker-compose up -d db
 # Now you need rebuild worker container to use new scripts and method
 docker-compose build worker
 # You enter on worker container and prompt inside at workuser
+docker-compose run worker
 # example : workuser@d5b183b49027:~$
 # Now you can again run fetch_datas.sh script to fetch dcm file from svc-node
 # Run at prompt ./fetch_datas.sh
