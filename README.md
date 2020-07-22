@@ -234,3 +234,19 @@ docker exec -it worker bash
 #Success
 #Import planmed-200064.424.dcm
 #Success
+```
+
+step5
+-----
+
+Hera-MI need access of datas from HealthCare provider through Internet, to ensure privacy and integrity of them, we need use VPN tunnel between OnPremise Hera-MI and HealthCare Provider.
+
+We use Docker technology, to easely manage ressource, lifecycle and separation of services.
+To ensure privacy of traffic we provide OpenVPN Server, (WireGuard it's not so mature for moment).
+To avoid problem with storage, it's managed with dedicated service, NAS as restrain for easily scalable.
+The instances on premise doesn't directly connect on HealthCare provider, filer instance use another network, follow segregation of them.
+
+* filer_network contain filer instance and datastore
+* heramiapp_network contain all instances expect filer
+
+![Architecture Plan](https://github.com/shannara/Hera-MI-hre-rec004/blob/step5/architecture_plan.png?raw=true)
